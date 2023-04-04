@@ -16,17 +16,18 @@ def get_requirements():
         return f.read().splitlines()
 
 
-def get_version():
-    current_dir = os.path.abspath(os.path.dirname(__file__))
-    version_file = os.path.join(current_dir, "craft_text_detector", "__init__.py")
-    with io.open(version_file, encoding="utf-8") as f:
-        return re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', f.read(), re.M).group(1)
+# def get_version():
+#     current_dir = os.path.abspath(os.path.dirname(__file__))
+#     version_file = os.path.join(current_dir, "craft_text_detector", "__init__.py")
+#     with io.open(version_file, encoding="utf-8") as f:
+#         return re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', f.read(), re.M).group(1)
 
 
 setuptools.setup(
     name="craft-text-detector",
-    version=get_version(),
-    author="Fatih Cagatay Akyon",
+    # version=get_version(),
+    version="v1.0.0",
+    author="Joao Bone",
     license="MIT",
     description="Fast and accurate text detection library built on CRAFT implementation",
     long_description=get_long_description(),
