@@ -26,7 +26,7 @@ def get_requirements():
 setuptools.setup(
     name="craft-text-detector",
     # version=get_version(),
-    version="v1.1.0",
+    version="v1.1.1",
     author="Joao Bone",
     license="MIT",
     description="Fast and accurate text detection library built on CRAFT implementation",

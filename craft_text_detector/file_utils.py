@@ -119,9 +119,9 @@ def rectify_poly(img, poly):
 
         width_step += w
 
-    top_m = {"matrix": top_M,
+    top_m = {"inv_matrix": cv2.invertAffineTransform(top_M),
              "polygon": Polygon(pts2_top)}
-    bottom_m = {"matrix": bottom_M,
+    bottom_m = {"inv_matrix": cv2.invertAffineTransform(bottom_M),
                 "polygon": Polygon(pts2_bottom)}
     return output_img, top_m, bottom_m
 
