@@ -155,7 +155,7 @@ class Craft:
                 file_name, file_ext = os.path.splitext(os.path.basename(image))
             else:
                 file_name = "image"
-            exported_file_paths = export_detected_regions(
+            exported_file_paths, top_matrices, bottom_matrices = export_detected_regions(
                 image=image,
                 regions=regions,
                 file_name=file_name,
@@ -163,6 +163,8 @@ class Craft:
                 rectify=self.rectify,
             )
             prediction_result["text_crop_paths"] = exported_file_paths
+            prediction_result["top_matrices"] = top_matrices
+            prediction_result["bottom_matrices"] = bottom_matrices
 
             # export heatmap, detection points, box visualization
             if self.export_extra:

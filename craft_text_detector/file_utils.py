@@ -4,6 +4,7 @@ import os
 import cv2
 import gdown
 import numpy as np
+from shapely.geometry.polygon import Polygon
 
 from craft_text_detector.image_utils import read_image
 
@@ -84,40 +85,45 @@ def rectify_poly(img, poly):
         w = int((np.linalg.norm(box[0] - box[1]) + np.linalg.norm(box[2] - box[3])) / 2)
 
         # Top triangle
-        pts1 = box[:3]
-        pts2 = np.float32(
+        pts1_top = box[:3]
+        pts2_top = np.float32(
             [[width_step, 0], [width_step + w - 1, 0], [width_step + w - 1, height - 1]]
         )
-        M = cv2.getAffineTransform(pts1, pts2)
+        top_M = cv2.getAffineTransform(pts1_top, pts2_top)
         warped_img = cv2.warpAffine(
-            img, M, (width, height), borderMode=cv2.BORDER_REPLICATE
+            img, top_M, (width, height), borderMode=cv2.BORDER_REPLICATE
         )
         warped_mask = np.zeros((height, width, 3), dtype=np.uint8)
-        warped_mask = cv2.fillConvexPoly(warped_mask, np.int32(pts2), (1, 1, 1))
+        warped_mask = cv2.fillConvexPoly(warped_mask, np.int32(pts2_top), (1, 1, 1))
         output_img[warped_mask == 1] = warped_img[warped_mask == 1]
 
         # Bottom triangle
-        pts1 = np.vstack((box[0], box[2:]))
-        pts2 = np.float32(
+        pts1_bottom = np.vstack((box[0], box[2:]))
+        pts2_bottom = np.float32(
             [
                 [width_step, 0],
                 [width_step + w - 1, height - 1],
                 [width_step, height - 1],
             ]
         )
-        M = cv2.getAffineTransform(pts1, pts2)
+        bottom_M = cv2.getAffineTransform(pts1_bottom, pts2_bottom)
         warped_img = cv2.warpAffine(
-            img, M, (width, height), borderMode=cv2.BORDER_REPLICATE
+            img, bottom_M, (width, height), borderMode=cv2.BORDER_REPLICATE
         )
         warped_mask = np.zeros((height, width, 3), dtype=np.uint8)
-        warped_mask = cv2.fillConvexPoly(warped_mask, np.int32(pts2), (1, 1, 1))
+        warped_mask = cv2.fillConvexPoly(warped_mask, np.int32(pts2_bottom), (1, 1, 1))
         cv2.line(
             warped_mask, (width_step, 0), (width_step + w - 1, height - 1), (0, 0, 0), 1
         )
         output_img[warped_mask == 1] = warped_img[warped_mask == 1]
 
         width_step += w
-    return output_img
+
+    top_m = {"matrix": top_M,
+             "polygon": Polygon(pts2_top)}
+    bottom_m = {"matrix": bottom_M,
+                "polygon": Polygon(pts2_bottom)}
+    return output_img, top_m, bottom_m
 
 
 def crop_poly(image, poly):
@@ -151,13 +157,17 @@ def export_detected_region(image, poly, file_path, rectify=True):
     """
     if rectify:
         # rectify poly region
-        result_rgb = rectify_poly(image, poly)
+        result_rgb, top_M, bottom_M = rectify_poly(image, poly)
     else:
         result_rgb = crop_poly(image, poly)
+        top_M = None
+        bottom_M = None
 
     # export corpped region
     result_bgr = cv2.cvtColor(result_rgb, cv2.COLOR_RGB2BGR)
     cv2.imwrite(file_path, result_bgr)
+
+    return top_M, bottom_M
 
 
 def export_detected_regions(
@@ -190,15 +200,19 @@ def export_detected_regions(
     exported_file_paths = []
 
     # export regions
+    top_matrices = []
+    bottom_matrices = []
     for ind, region in enumerate(regions):
         # get export path
         file_path = os.path.join(crops_dir, "crop_" + str(ind) + ".png")
         # export region
-        export_detected_region(image, poly=region, file_path=file_path, rectify=rectify)
+        top_matrix, bottom_matrix = export_detected_region(image, poly=region, file_path=file_path, rectify=rectify)
+        top_matrices.append(top_matrix)
+        bottom_matrices.append(bottom_matrix)
         # note exported file path
         exported_file_paths.append(file_path)
 
-    return exported_file_paths
+    return exported_file_paths, top_matrices, bottom_matrices
 
 
 def export_extra_results(
